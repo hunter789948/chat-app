@@ -31,13 +31,11 @@ app.post("/register", (req, res) => {
     return res.status(400).json({ message: "All fields required" });
   }
 
-  // Check email
   const emailExists = users.find((u) => u.email === email);
   if (emailExists) {
     return res.status(400).json({ message: "Email already exists" });
   }
 
-  // Check username
   const usernameExists = users.find((u) => u.username === username);
   if (usernameExists) {
     return res.status(400).json({ message: "Username already taken" });
@@ -68,36 +66,106 @@ app.post("/login", (req, res) => {
 
   res.json({
     token,
-    username: user.username, // 👈 important for frontend
+    username: user.username,
   });
 });
 
-// ---------- SOCKET ----------
+// ---------- SOCKET WITH VALID ROOMS ----------
+
+let roomUsers = {};         // { roomId: [username, username] }
+let rooms = new Set();      // stores valid room IDs
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("join", (username) => {
+  // Join or create room
+  socket.on("joinRoom", ({ username, roomId, create }) => {
     socket.username = username;
-    io.emit("system", `${username} joined the chat`);
+
+    // If creating room → register it
+    if (create) {
+      rooms.add(roomId);
+    }
+
+    // If room does not exist → reject join
+    if (!rooms.has(roomId)) {
+      socket.emit("roomError", "Room does not exist");
+      return;
+    }
+
+    socket.roomId = roomId;
+    socket.join(roomId);
+
+    if (!roomUsers[roomId]) roomUsers[roomId] = [];
+
+    if (!roomUsers[roomId].includes(username)) {
+      roomUsers[roomId].push(username);
+    }
+
+    io.to(roomId).emit("onlineUsers", roomUsers[roomId]);
+    io.to(roomId).emit("system", `${username} joined the room`);
   });
 
-  socket.on("sendMessage", (message) => {
-    io.emit("receiveMessage", {
-      user: socket.username,
-      text: message,
-    });
+  // Leave room
+  socket.on("leaveRoom", () => {
+    const { username, roomId } = socket;
+
+    if (username && roomId && roomUsers[roomId]) {
+      socket.leave(roomId);
+
+      roomUsers[roomId] = roomUsers[roomId].filter(
+        (u) => u !== username
+      );
+
+      io.to(roomId).emit("onlineUsers", roomUsers[roomId]);
+      io.to(roomId).emit("system", `${username} left the room`);
+    }
+
+    socket.roomId = null;
+  });
+
+  // Messages (text + image)
+  socket.on("sendMessage", (data) => {
+    const { username, roomId } = socket;
+    if (!username || !roomId || !data) return;
+
+    if (data.type === "text") {
+      io.to(roomId).emit("receiveMessage", {
+        user: username,
+        type: "text",
+        text: data.text,
+      });
+    }
+
+    if (data.type === "image") {
+      io.to(roomId).emit("receiveMessage", {
+        user: username,
+        type: "image",
+        image: data.image,
+      });
+    }
   });
 
   socket.on("disconnect", () => {
-    if (socket.username) {
-      io.emit("system", `${socket.username} left the chat`);
+    const { username, roomId } = socket;
+
+    if (username && roomId && roomUsers[roomId]) {
+      roomUsers[roomId] = roomUsers[roomId].filter(
+        (u) => u !== username
+      );
+
+      io.to(roomId).emit("onlineUsers", roomUsers[roomId]);
+      io.to(roomId).emit("system", `${username} left the room`);
     }
+
+    console.log("User disconnected:", socket.id);
   });
 });
 
 // ---------- SERVER ----------
 
-server.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
 });

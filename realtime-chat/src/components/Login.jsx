@@ -4,6 +4,7 @@ import Navbar from "./Navbar";
 export default function Login({ onLogin, goRegister, goHome }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState(null); // { type: "error" | "success", text: "" }
 
   const handleLogin = async () => {
@@ -26,14 +27,11 @@ export default function Login({ onLogin, goRegister, goHome }) {
         return;
       }
 
-      // Optional success feedback (very fast)
       setMessage({ type: "success", text: "Login successful!" });
 
-      // Small delay so user sees success
       setTimeout(() => {
         onLogin(data.username);
       }, 500);
-
     } catch (error) {
       setMessage({ type: "error", text: "Server error. Is backend running?" });
     }
@@ -77,13 +75,24 @@ export default function Login({ onLogin, goRegister, goHome }) {
             onChange={(e) => setEmail(e.target.value)}
           />
 
-          <input
-            type="password"
-            className="input-modern w-full mt-4"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          {/* Password with show/hide */}
+          <div className="relative mt-4">
+            <input
+              type={showPassword ? "text" : "password"}
+              className="input-modern w-full pr-12"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+            >
+              {showPassword ? "🙈" : "👁"}
+            </button>
+          </div>
 
           <button onClick={handleLogin} className="btn-premium w-full mt-6">
             Login →

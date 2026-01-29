@@ -5,6 +5,7 @@ export default function Register({ goLogin, goHome }) {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState(null); // { type: "error" | "success", text: "" }
 
   const handleRegister = async () => {
@@ -27,10 +28,15 @@ export default function Register({ goLogin, goHome }) {
         return;
       }
 
-      setMessage({ type: "success", text: "Account created successfully! You can now login." });
+      setMessage({
+        type: "success",
+        text: "Account created successfully! Redirecting to login...",
+      });
 
-      // Optional auto redirect after 1.5s
-      setTimeout(() => goLogin(), 1500);
+      // Small delay so user sees success
+      setTimeout(() => {
+        goLogin();
+      }, 1200);
     } catch (err) {
       setMessage({ type: "error", text: "Server error. Is backend running?" });
     }
@@ -40,8 +46,14 @@ export default function Register({ goLogin, goHome }) {
     <div className="min-h-screen relative overflow-hidden">
       <div className="bg-animated"></div>
 
-      <Navbar goHome={goHome} goLogin={goLogin} goRegister={() => {}} />
+      {/* Navbar */}
+      <Navbar
+        goHome={goHome}
+        goLogin={goLogin}
+        goRegister={() => {}}
+      />
 
+      {/* Centered card */}
       <div className="flex justify-center items-center mt-24">
         <div className="glass-card p-10 w-[380px] animate-float">
           <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
@@ -75,13 +87,24 @@ export default function Register({ goLogin, goHome }) {
             onChange={(e) => setUsername(e.target.value)}
           />
 
-          <input
-            type="password"
-            className="input-modern w-full mt-4"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          {/* Password with show/hide */}
+          <div className="relative mt-4">
+            <input
+              type={showPassword ? "text" : "password"}
+              className="input-modern w-full pr-12"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+            >
+              {showPassword ? "🙈" : "👁"}
+            </button>
+          </div>
 
           <button onClick={handleRegister} className="btn-premium w-full mt-6">
             Sign Up →
