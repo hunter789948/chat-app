@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import EmojiPicker from "emoji-picker-react";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://chat-app-backend-hfnd.onrender.com");
 
 export default function Chat({ username, room, onLeaveRoom, onRoomError }) {
   const [message, setMessage] = useState("");

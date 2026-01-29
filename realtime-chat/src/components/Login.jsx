@@ -14,7 +14,7 @@ export default function Login({ onLogin, goRegister, goHome }) {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/login", {
+      const res = await fetch("https://chat-app-backend-hfnd.onrender.com/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
